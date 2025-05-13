@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/medicine_logo.dart';
+import '../services/user_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -11,21 +12,36 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _userService = UserService();
+  String? _error;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _handleSignup() {
+  Future<void> _handleSignup() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Implement signup logic
-      Navigator.pushReplacementNamed(context, '/medicines');
+      setState(() => _error = null);
+      try {
+        await _userService.createUser(
+          email: _emailController.text,
+          password: _passwordController.text,
+          name: _nameController.text,
+        );
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/medicines');
+        }
+      } catch (e) {
+        setState(() => _error = e.toString());
+      }
     }
   }
 
@@ -56,8 +72,16 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
                 ),
+                if (_error != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
                 const SizedBox(height: 32),
-                // Name Field (filled purple)
+                // Name Field
                 TextFormField(
                   controller: _nameController,
                   style: const TextStyle(color: Colors.black),
@@ -91,7 +115,44 @@ class _SignupScreenState extends State<SignupScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                // Password Field (outlined)
+                // Email Field
+                TextFormField(
+                  controller: _emailController,
+                  style: const TextStyle(color: Colors.black),
+                  decoration: InputDecoration(
+                    hintText: 'Gmail Address',
+                    prefixIcon:
+                        const Icon(Icons.email_outlined, color: Colors.black),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Color(0xFF9C27B0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Color(0xFF9C27B0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide:
+                          const BorderSide(color: Color(0xFF9C27B0), width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    hintStyle: const TextStyle(color: Colors.black54),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your Gmail address';
+                    }
+                    if (!_userService.isValidGmail(value)) {
+                      return 'Please enter a valid Gmail address';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                // Password Field
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
@@ -121,14 +182,14 @@ class _SignupScreenState extends State<SignupScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter a password';
                     }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                    if (!_userService.isValidPassword(value)) {
+                      return 'Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 12),
-                // Confirm Password Field (outlined)
+                // Confirm Password Field
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: true,
@@ -165,7 +226,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-                // Sign Up Button (large, black, rounded)
+                // Sign Up Button
                 SizedBox(
                   height: 44,
                   child: ElevatedButton(

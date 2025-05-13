@@ -7,7 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:drug_info_app/main.dart';
+import 'package:rxinsight/main.dart';
 
 void main() {
   testWidgets('App renders correctly', (WidgetTester tester) async {

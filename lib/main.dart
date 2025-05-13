@@ -5,13 +5,17 @@ import 'providers/drug_provider.dart';
 import 'providers/reminder_provider.dart';
 import 'providers/medicine_provider.dart';
 import 'services/notification_service.dart';
+import 'services/user_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/main_screen.dart';
+import 'models/user.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
+  Hive.registerAdapter(UserAdapter());
+  await UserService().initialize();
   await NotificationService().init();
   runApp(const MyApp());
 }

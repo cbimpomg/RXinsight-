@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/medicine_logo.dart';
+import '../services/user_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,21 +11,33 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _userService = UserService();
   bool _keepSignedIn = false;
+  String? _error;
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Implement login logic
-      Navigator.pushReplacementNamed(context, '/main');
+      setState(() => _error = null);
+      try {
+        await _userService.authenticateUser(
+          _emailController.text,
+          _passwordController.text,
+        );
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/main');
+        }
+      } catch (e) {
+        setState(() => _error = e.toString());
+      }
     }
   }
 
@@ -55,15 +68,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+                if (_error != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
                 const SizedBox(height: 32),
-                // Name Field (filled purple)
+                // Email Field
                 TextFormField(
-                  controller: _nameController,
+                  controller: _emailController,
                   style: const TextStyle(color: Colors.black),
                   decoration: InputDecoration(
-                    hintText: 'Name',
+                    hintText: 'Gmail Address',
                     prefixIcon:
-                        const Icon(Icons.person_outline, color: Colors.black),
+                        const Icon(Icons.email_outlined, color: Colors.black),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -84,13 +105,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
+                      return 'Please enter your Gmail address';
+                    }
+                    if (!_userService.isValidGmail(value)) {
+                      return 'Please enter a valid Gmail address';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 12),
-                // Password Field (outlined)
+                // Password Field
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
@@ -131,14 +155,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       value: _keepSignedIn,
                       onChanged: (val) =>
                           setState(() => _keepSignedIn = val ?? false),
-                      activeColor: Color(0xFF9C27B0),
+                      activeColor: const Color(0xFF9C27B0),
                     ),
                     const Text('Keep me signed in',
                         style: TextStyle(fontSize: 16)),
                   ],
                 ),
                 const SizedBox(height: 18),
-                // Sign In Button (large, black, rounded)
+                // Sign In Button
                 SizedBox(
                   height: 44,
                   child: ElevatedButton(
